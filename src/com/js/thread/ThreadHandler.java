@@ -11,10 +11,10 @@ public class ThreadHandler {
 	
 	Runnable mRunnable;
 	
-	ThreadHandler() {
+	public ThreadHandler() {
 	}
 	
-	synchronized void setStatus(Status status) {
+	public synchronized void setStatus(Status status) {
 		mStatus = status;
 	}
 	

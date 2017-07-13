@@ -36,7 +36,7 @@ public class EventManager {
 		run();
 	}
 	
-	public synchronized void addListener(String name, boolean inMainThread, IEventListener listener) {
+	public synchronized void addListener(String name, IEventListener listener) {
 		List<IEventListener> list = mListeners.get(name);
 		
 		if (list == null) {
