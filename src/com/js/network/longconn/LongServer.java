@@ -95,7 +95,7 @@ public class LongServer {
 			
 			notifyConnected();
 			
-			ThreadUtil.run(mAcceptRunnable);
+			ThreadUtil.getVice().run(mAcceptRunnable);
 			return true;
 		} catch (Exception e) {
 			Logger.getInstance().print(TAG, Level.E, e);
@@ -106,7 +106,7 @@ public class LongServer {
 	}
 	
 	public void connect() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				connectSync();
@@ -147,7 +147,7 @@ public class LongServer {
 	protected void onAccept(final Socket socket) {
 		notifyAccepted(socket);
 		
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -179,7 +179,7 @@ public class LongServer {
 	}
 	
 	protected void notifyConnected() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongServer.this) {
@@ -192,7 +192,7 @@ public class LongServer {
 	}
 	
 	protected void notifyConnectFailed() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongServer.this) {
@@ -205,7 +205,7 @@ public class LongServer {
 	}
 	
 	protected void notifyDisconnected() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongServer.this) {
@@ -218,7 +218,7 @@ public class LongServer {
 	}
 	
 	protected void notifyClosed() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongServer.this) {
@@ -231,7 +231,7 @@ public class LongServer {
 	}
 	
 	protected void notifyAccepted(final Socket socket) {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongServer.this) {
@@ -244,7 +244,7 @@ public class LongServer {
 	}
 
 	protected void notifyReceived(final Socket socket, final byte[] data, final int length) {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongServer.this) {
@@ -257,7 +257,7 @@ public class LongServer {
 	}
 	
 	protected void notifyLeaved(final Socket socket) {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongServer.this) {

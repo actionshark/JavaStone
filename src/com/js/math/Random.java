@@ -5,6 +5,10 @@ public class Random extends java.util.Random {
 	
 	// TODO: may exceed
 	
+	public boolean nextBoolean(float prob) {
+		return nextFloat() < prob;
+	}
+	
 	public int nextInt(int min, int max) {
 		long dis = max - min;
 		long add = nextLong() % dis;

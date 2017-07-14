@@ -5,17 +5,13 @@ public class ThreadHandler {
 		Running, Finished, Cancelled,
 	}
 	
-	Status mStatus = Status.Running; 
+	protected Status mStatus = Status.Running; 
 	
-	boolean mTryCancel = false;
+	protected boolean mTryCancel = false;
 	
-	Runnable mRunnable;
+	protected Runnable mRunnable;
 	
-	public ThreadHandler() {
-	}
-	
-	public synchronized void setStatus(Status status) {
-		mStatus = status;
+	protected ThreadHandler() {
 	}
 	
 	public synchronized Status getStatus() {

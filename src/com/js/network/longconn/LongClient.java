@@ -109,12 +109,12 @@ public class LongClient {
 		}
 		mIsReceiving = true;
 		
-		ThreadUtil.run(mReceiveRunnable);
+		ThreadUtil.getVice().run(mReceiveRunnable);
 		return true;
 	}
 	
 	public synchronized void connect() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				connectSync();
@@ -138,7 +138,7 @@ public class LongClient {
 	}
 	
 	public void send(final byte[] data, final int offset, final int length) {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				sendSync(data, offset, length);
@@ -168,7 +168,7 @@ public class LongClient {
 	}
 	
 	protected void notifyConnected() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongClient.this) {
@@ -181,7 +181,7 @@ public class LongClient {
 	}
 	
 	protected void notifyConnectFailed() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongClient.this) {
@@ -194,7 +194,7 @@ public class LongClient {
 	}
 	
 	protected void notifyDisconnected() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongClient.this) {
@@ -207,7 +207,7 @@ public class LongClient {
 	}
 	
 	protected void notifyClosed() {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongClient.this) {
@@ -220,7 +220,7 @@ public class LongClient {
 	}
 	
 	protected void notifySended(final boolean success) {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongClient.this) {
@@ -233,7 +233,7 @@ public class LongClient {
 	}
 	
 	protected void notifyReceived(final byte[] data, final int offset, final int length) {
-		ThreadUtil.run(new Runnable() {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (LongClient.this) {

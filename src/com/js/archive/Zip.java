@@ -22,22 +22,22 @@ public class Zip implements IArchive {
 	}
 
 	@Override
-	public void compressSync(File file, OutputStream output) {
+	public void compress(File file, OutputStream output) {
 		// TODO
 	}
 
 	@Override
-	public void compress(final File file, final OutputStream output) {
-		ThreadUtil.run(new Runnable() {
+	public void compressAsync(final File file, final OutputStream output) {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				compressSync(file, output);
+				compress(file, output);
 			}
 		});
 	}
 
 	@Override
-	public void decompressSync(InputStream input, File dir) {
+	public void decompress(InputStream input, File dir) {
 		try {
 			ZipInputStream zis = new ZipInputStream(input);
 			ZipEntry entry = null;
@@ -80,40 +80,35 @@ public class Zip implements IArchive {
 	}
 
 	@Override
-	public void decompress(final InputStream input, final File dir) {
-		ThreadUtil.run(new Runnable() {
+	public void decompressAsync(final InputStream input, final File dir) {
+		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				decompressSync(input, dir);
+				decompress(input, dir);
 			}
 		});
 	}
 
 	@Override
 	public void stop() {
+		// TODO
 	}
 
-	private void notityProgress(final String from, final String to) {
-		synchronized (Zip.this) {
-			if (mListener != null) {
-				mListener.onProgress(Zip.this, from, to);
-			}
+	private synchronized void notityProgress(String from, String to) {
+		if (mListener != null) {
+			mListener.onProgress(Zip.this, from, to);
 		}
 	}
 
-	private void notityException(final Exception ex) {
-		synchronized (Zip.this) {
-			if (mListener != null) {
-				mListener.onException(Zip.this, ex);
-			}
+	private synchronized void notityException(Exception ex) {
+		if (mListener != null) {
+			mListener.onException(Zip.this, ex);
 		}
 	}
 
-	private void notityFinish() {
-		synchronized (Zip.this) {
-			if (mListener != null) {
-				mListener.onFinish(Zip.this);
-			}
+	private synchronized void notityFinish() {
+		if (mListener != null) {
+			mListener.onFinish(Zip.this);
 		}
 	}
 }
