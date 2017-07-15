@@ -1,4 +1,4 @@
-package com.js.network.longconn;
+package com.js.network;
 
 public enum Status {
 	None, Connected, Disconnected, Closed,

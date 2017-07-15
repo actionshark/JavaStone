@@ -1,4 +1,4 @@
-package com.js.network.longconn;
+package com.js.network;
 
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -9,14 +9,15 @@ import com.js.log.Level;
 import com.js.log.Logger;
 import com.js.thread.ThreadUtil;
 
-public class LongServer {
-	public static final String TAG = LongServer.class.getSimpleName();
+public class NetServer {
+	public static final String TAG = NetServer.class.getSimpleName();
 	
 	protected ServerSocket mSocket;
 	protected int mPort;
 	
 	protected Status mStatus = Status.None;
 	
+	protected boolean mKeepConnect = true;
 	protected int mTimeout = 10;
 	protected long mRecreateInterval = 10000;
 	
@@ -27,7 +28,7 @@ public class LongServer {
 		public void run() {
 			try {
 				while (true) {
-					synchronized (LongServer.this) {
+					synchronized (NetServer.this) {
 						if (mStatus != Status.Connected) {
 							return;
 						}
@@ -42,7 +43,7 @@ public class LongServer {
 				Logger.getInstance().print(TAG, Level.E, e);
 			}
 			
-			synchronized (LongServer.this) {
+			synchronized (NetServer.this) {
 				mStatus = Status.Disconnected;
 				notifyDisconnected();
 				
@@ -53,13 +54,13 @@ public class LongServer {
 						Logger.getInstance().print(TAG, Level.E, e);
 					}
 					
-					connect();
+					connectAsync();
 				}
 			}
 		}
 	};
 	
-	public LongServer() {
+	public NetServer() {
 	}
 	
 	public synchronized Status getStatus() {
@@ -70,6 +71,10 @@ public class LongServer {
 		mPort = port;
 	}
 	
+	public synchronized void setKeepConnect(boolean keep) {
+		mKeepConnect = keep;
+	}
+	
 	public synchronized void setTimeout(int timeout) {
 		mTimeout = timeout;
 	}
@@ -78,7 +83,7 @@ public class LongServer {
 		mRecreateInterval = interval;
 	}
 	
-	public synchronized boolean connectSync() {
+	public synchronized boolean connect() {
 		if (mStatus != Status.None && mStatus != Status.Disconnected) {
 			return false;
 		}
@@ -105,11 +110,11 @@ public class LongServer {
 		return false;
 	}
 	
-	public void connect() {
+	public void connectAsync() {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				connectSync();
+				connect();
 			}
 		});
 	}
@@ -120,7 +125,6 @@ public class LongServer {
 		}
 		
 		if (close_()) {
-			mStatus = Status.Closed;
 			notifyClosed();
 			return true;
 		} else {
@@ -145,7 +149,10 @@ public class LongServer {
 	}
 	
 	protected void onAccept(final Socket socket) {
-		notifyAccepted(socket);
+		final NetClient client = new NetClient();
+		client.setSocket(socket);
+		
+		notifyAccepted(client);
 		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
@@ -158,16 +165,18 @@ public class LongServer {
 						int length = is.read(data);
 						
 						if (length > 0) {
-							notifyReceived(socket, data, length);
+							notifyReceived(client, data, length);
+						} else if (mKeepConnect) {
+							Thread.sleep(200);
 						} else {
-							Thread.sleep(100);
+							break;
 						}
 					}
 				} catch (Exception e) {
 					Logger.getInstance().print(TAG, Level.E, e);
 				}
 				
-				notifyLeaved(socket);
+				notifyLeaved(client);
 			}
 		});
 	}
@@ -182,9 +191,9 @@ public class LongServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongServer.this) {
+				synchronized (NetServer.this) {
 					if (mListener != null) {
-						mListener.onConnected(LongServer.this);
+						mListener.onConnected(NetServer.this);
 					}
 				}
 			}
@@ -195,9 +204,9 @@ public class LongServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongServer.this) {
+				synchronized (NetServer.this) {
 					if (mListener != null) {
-						mListener.onConnectFailed(LongServer.this);
+						mListener.onConnectFailed(NetServer.this);
 					}
 				}
 			}
@@ -208,9 +217,9 @@ public class LongServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongServer.this) {
+				synchronized (NetServer.this) {
 					if (mListener != null) {
-						mListener.onDisconnected(LongServer.this);
+						mListener.onDisconnected(NetServer.this);
 					}
 				}
 			}
@@ -221,48 +230,48 @@ public class LongServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongServer.this) {
+				synchronized (NetServer.this) {
 					if (mListener != null) {
-						mListener.onClosed(LongServer.this);
+						mListener.onClosed(NetServer.this);
 					}
 				}
 			}
 		});
 	}
 	
-	protected void notifyAccepted(final Socket socket) {
+	protected void notifyAccepted(final NetClient client) {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongServer.this) {
+				synchronized (NetServer.this) {
 					if (mListener != null) {
-						mListener.onAccepted(LongServer.this, socket);
+						mListener.onAccepted(NetServer.this, client);
 					}
 				}
 			}
 		});
 	}
 
-	protected void notifyReceived(final Socket socket, final byte[] data, final int length) {
+	protected void notifyReceived(final NetClient client, final byte[] data, final int length) {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongServer.this) {
+				synchronized (NetServer.this) {
 					if (mListener != null) {
-						mListener.onReceived(LongServer.this, socket, data, 0, length);
+						mListener.onReceived(NetServer.this, client, data, 0, length);
 					}
 				}
 			}
 		});
 	}
 	
-	protected void notifyLeaved(final Socket socket) {
+	protected void notifyLeaved(final NetClient client) {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongServer.this) {
+				synchronized (NetServer.this) {
 					if (mListener != null) {
-						mListener.onLeaved(LongServer.this, socket);
+						mListener.onLeaved(NetServer.this, client);
 					}
 				}
 			}

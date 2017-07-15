@@ -1,4 +1,4 @@
-package com.js.network.longconn;
+package com.js.network;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -9,14 +9,16 @@ import com.js.log.Level;
 import com.js.log.Logger;
 import com.js.thread.ThreadUtil;
 
-public class LongClient {
-	public static final String TAG = LongClient.class.getSimpleName();
+public class NetClient {
+	public static final String TAG = NetClient.class.getSimpleName();
 	
 	protected Socket mSocket;
 	protected String mHost;
 	protected int mPort;
 	
+	protected boolean mKeepConnect = true;
 	protected int mTimeout = 10;
+	protected long mReconnectInterval = 10000;
 	
 	protected boolean mIsReceiving = false;
 	protected final Runnable mReceiveRunnable = new Runnable() {
@@ -31,25 +33,37 @@ public class LongClient {
 					
 					if (length > 0) {
 						notifyReceived(data, 0, length);
+					} else if (mKeepConnect) {
+						Thread.sleep(200);
 					} else {
-						Thread.sleep(100);
+						break;
 					}
 				}
 			} catch (Exception e) {
 				Logger.getInstance().print(TAG, Level.E, e);
 			}
 			
-			synchronized (LongClient.this) {
+			synchronized (NetClient.this) {
 				mIsReceiving = false;
-			}
 			
-			notifyDisconnected();
+				notifyDisconnected();
+				
+				if (mReconnectInterval > 0 && getStatus() != Status.Closed) {
+					try {
+						Thread.sleep(mReconnectInterval);
+					} catch (Exception e) {
+						Logger.getInstance().print(TAG, Level.E, e);
+					}
+					
+					connectAsync();
+				}
+			}
 		}
 	};
 	
 	protected IClientListener mListener;
 	
-	public LongClient() {
+	public NetClient() {
 	}
 	
 	public synchronized Status getStatus() {
@@ -84,15 +98,20 @@ public class LongClient {
 		mPort = port;
 	}
 	
+	public synchronized void setKeepConnect(boolean keep) {
+		mKeepConnect = keep;
+	}
+	
 	public synchronized void setTimeout(int timeout) {
 		mTimeout = timeout;
 	}
 	
-	public synchronized boolean connectSync() {
+	public synchronized boolean connect() {
 		if (mSocket == null) {
 			try {
 				mSocket = new Socket();
 				mSocket.setSoTimeout(mTimeout);
+				mSocket.setKeepAlive(mKeepConnect);
 				mSocket.connect(new InetSocketAddress(mHost, mPort));
 				
 				notifyConnected();
@@ -113,16 +132,16 @@ public class LongClient {
 		return true;
 	}
 	
-	public synchronized void connect() {
+	public synchronized void connectAsync() {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				connectSync();
+				connect();
 			}
 		});
 	}
 	
-	public boolean sendSync(byte[] data, int offset, int length) {
+	public boolean send(byte[] data, int offset, int length) {
 		try {
 			OutputStream os = mSocket.getOutputStream();
 			os.write(data, offset, length);
@@ -137,11 +156,11 @@ public class LongClient {
 		return false;
 	}
 	
-	public void send(final byte[] data, final int offset, final int length) {
+	public void sendAsync(final byte[] data, final int offset, final int length) {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				sendSync(data, offset, length);
+				send(data, offset, length);
 			}
 		});
 	}
@@ -171,9 +190,9 @@ public class LongClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongClient.this) {
+				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onConnected(LongClient.this);
+						mListener.onConnected(NetClient.this);
 					}
 				}
 			}
@@ -184,9 +203,9 @@ public class LongClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongClient.this) {
+				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onConnectFailed(LongClient.this);
+						mListener.onConnectFailed(NetClient.this);
 					}
 				}
 			}
@@ -197,9 +216,9 @@ public class LongClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongClient.this) {
+				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onDisconnected(LongClient.this);
+						mListener.onDisconnected(NetClient.this);
 					}
 				}
 			}
@@ -210,9 +229,9 @@ public class LongClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongClient.this) {
+				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onClosed(LongClient.this);
+						mListener.onClosed(NetClient.this);
 					}
 				}
 			}
@@ -223,9 +242,9 @@ public class LongClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongClient.this) {
+				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onSended(LongClient.this, success);
+						mListener.onSended(NetClient.this, success);
 					}
 				}
 			}
@@ -236,9 +255,9 @@ public class LongClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (LongClient.this) {
+				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onReceived(LongClient.this, data, offset, length);
+						mListener.onReceived(NetClient.this, data, offset, length);
 					}
 				}
 			}
