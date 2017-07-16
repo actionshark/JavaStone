@@ -1,15 +1,10 @@
 package com.js.talk;
 
-import com.js.log.Level;
-import com.js.log.Logger;
-
-import net.sf.json.JSONObject;
-
-public class DataParser {
-	public static final String TAG = DataParser.class.getSimpleName();
+public class DataCoder {
+	public static final String TAG = DataCoder.class.getSimpleName();
 	
-	public static interface IOnParseListener {
-		public void onParse(JSONObject jo);
+	public static interface IOnDecodeListener {
+		public void onDecode(byte[] data, int offset, int length);
 	}
 	
 	public static final int LENGTH_SIZE = 2;
@@ -18,12 +13,28 @@ public class DataParser {
 	private int mOffset = 0;
 	private int mLength = 0;
 	
+	public static byte[] encode(byte[] data, int offset, int length) {
+		byte[] bs = new byte[LENGTH_SIZE + length];
+		
+		int len = length;
+		for (int i = 0; i < LENGTH_SIZE; i++) {
+			bs[LENGTH_SIZE - i - 1] = (byte) (len & 0xff);
+			len >>= 8;
+		}
+		
+		for (int i = 0; i < length; i++) {
+			bs[LENGTH_SIZE + i] = data[offset + i];
+		}
+		
+		return bs;
+	}
+	
 	public void clear() {
 		mOffset = 0;
 		mLength = 0;
 	}
 	
-	public boolean parse(byte[] data, int offset, int length, IOnParseListener listener) {
+	public void decode(byte[] data, int offset, int length, IOnDecodeListener listener) {
 		if (mLength == 0) {
 			mData = data;
 			mOffset = offset;
@@ -61,20 +72,10 @@ public class DataParser {
 				break;
 			}
 			
-			try {
-				String str = new String(data, offset, length);
-				JSONObject jo = JSONObject.fromObject(str);
-				listener.onParse(jo);
-			} catch (Exception e) {
-				Logger.getInstance().print(TAG, Level.E, e);
-				
-				return false;
-			}
+			listener.onDecode(mData, mOffset + LENGTH_SIZE, len);
 			
 			mOffset += LENGTH_SIZE + len;
 			mLength -= LENGTH_SIZE + len;
 		}
-		
-		return true;
 	}
 }

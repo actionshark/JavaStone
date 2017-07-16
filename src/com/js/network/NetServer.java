@@ -18,7 +18,6 @@ public class NetServer {
 	protected Status mStatus = Status.None;
 	
 	protected boolean mKeepConnect = true;
-	protected int mTimeout = 10;
 	protected long mRecreateInterval = 10000;
 	
 	protected IServerListener mListener;
@@ -75,10 +74,6 @@ public class NetServer {
 		mKeepConnect = keep;
 	}
 	
-	public synchronized void setTimeout(int timeout) {
-		mTimeout = timeout;
-	}
-	
 	public synchronized void setRecreateInterval(long interval) {
 		mRecreateInterval = interval;
 	}
@@ -94,7 +89,6 @@ public class NetServer {
 		
 		try {
 			mSocket = new ServerSocket();
-			mSocket.setSoTimeout(mTimeout);
 			mSocket.bind(new InetSocketAddress(mPort));
 			mStatus = Status.Connected;
 			
@@ -135,7 +129,9 @@ public class NetServer {
 	protected synchronized boolean close_() {
 		try {
 			if (mSocket != null) {
-				mSocket.close();
+				if (mSocket.isClosed() == false) {
+					mSocket.close();
+				}
 				mSocket = null;
 			}
 			
@@ -175,6 +171,8 @@ public class NetServer {
 				} catch (Exception e) {
 					Logger.getInstance().print(TAG, Level.E, e);
 				}
+				
+				NetworkUtil.closeSocket(socket);
 				
 				notifyLeaved(client);
 			}

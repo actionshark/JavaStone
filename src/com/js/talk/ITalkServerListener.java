@@ -1,8 +1,7 @@
 package com.js.talk;
 
-import net.sf.json.JSONObject;
-
 public interface ITalkServerListener<T extends UserInfo> {
-	public void onReceived(TalkServer<T> server, T userInfo, JSONObject jo);
-	public void onLeaved(TalkServer<T> server, T userInfo);
+	public void onReceived(TalkServer<T> server, TalkClient client,
+		T userInfo, byte[] data, int offset, int length);
+	public void onLeaved(TalkServer<T> server, TalkClient client, T userInfo);
 }

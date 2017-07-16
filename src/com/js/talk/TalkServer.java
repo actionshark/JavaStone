@@ -8,16 +8,15 @@ import com.js.log.Logger;
 import com.js.network.IServerListener;
 import com.js.network.NetClient;
 import com.js.network.NetServer;
-import com.js.talk.DataParser.IOnParseListener;
-
-import net.sf.json.JSONObject;
+import com.js.talk.DataCoder.IOnDecodeListener;
 
 public class TalkServer <T extends UserInfo> {
 	public static final String TAG = TalkServer.class.getSimpleName();
 	
 	protected class ClientNode {
+		public TalkClient client;
 		public T userInfo;
-		public final DataParser parser = new DataParser();
+		public final DataCoder parser = new DataCoder();
 	}
 	
 	protected NetServer mServer;
@@ -43,7 +42,7 @@ public class TalkServer <T extends UserInfo> {
 		
 		mUserInfos.put(ui.id, ui);
 		
-		ClientNode cn = mClientNodes.get(ui.netClient);
+		ClientNode cn = mClientNodes.get(ui.client.getClient());
 		cn.userInfo = ui;
 	}
 	
@@ -51,8 +50,8 @@ public class TalkServer <T extends UserInfo> {
 		if (mUserInfos.containsKey(id)) {
 			T ou = mUserInfos.remove(id);
 			
-			mClientNodes.remove(ou.netClient);
-			ou.netClient.close();
+			mClientNodes.remove(ou.client.getClient());
+			ou.client.getClient().close();
 		}
 	}
 	
@@ -65,38 +64,37 @@ public class TalkServer <T extends UserInfo> {
 		mServer.setListener(new IServerListener() {
 			@Override
 			public void onAccepted(NetServer server, NetClient client) {
+				ClientNode cn = new ClientNode();
+				
+				cn.client = new TalkClient();
+				cn.client.setClient(client);
+				
+				mClientNodes.put(client, cn);
 			}
 			
 			@Override
-			public void onReceived(NetServer server, NetClient client,
+			public void onReceived(NetServer server, final NetClient client,
 					byte[] data, int offset, int length) {
 				
 				synchronized (TalkServer.this) {
-					final ClientNode cn;
-					if (mClientNodes.containsKey(client)) {
-						cn = mClientNodes.get(client);
-					} else {
-						cn = new ClientNode();
-						
-						mClientNodes.put(client, cn);
+					final ClientNode cn = mClientNodes.get(client);
+					if (cn == null) {
+						return;
 					}
 					
-					boolean ret = cn.parser.parse(data, offset, length, new IOnParseListener() {
+					cn.parser.decode(data, offset, length, new IOnDecodeListener() {
 						@Override
-						public void onParse(JSONObject jo) {
+						public void onDecode(byte[] data, int offset, int length) {
 							if (mListener != null) {
 								try {
-									mListener.onReceived(TalkServer.this, cn.userInfo, jo);
+									mListener.onReceived(TalkServer.this, cn.client,
+										cn.userInfo, data, offset, length);
 								} catch (Exception e) {
 									Logger.getInstance().print(TAG, Level.E, e);
 								}
 							}
 						}
 					});
-					
-					if (ret == false) {
-						client.close();
-					}
 				}
 			}
 			
@@ -108,7 +106,7 @@ public class TalkServer <T extends UserInfo> {
 						
 						if (cn != null) {
 							try {
-								mListener.onLeaved(TalkServer.this, cn.userInfo);
+								mListener.onLeaved(TalkServer.this, cn.client, cn.userInfo);
 							} catch (Exception e) {
 								Logger.getInstance().print(TAG, Level.E, e);
 							}

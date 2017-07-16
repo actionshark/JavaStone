@@ -1,7 +1,9 @@
 package com.js.log;
 
+import java.util.Calendar;
+
 public abstract class Logger {
-	private static Logger sInstance;
+	private static Logger sInstance = new SimpleLogger();
 	
 	public static synchronized void setInstance(Logger logger) {
 		sInstance = logger;
@@ -38,6 +40,12 @@ public abstract class Logger {
 		
 		StringBuilder sb = new StringBuilder();
 		
+		Calendar cal = Calendar.getInstance();
+		sb.append(String.format("%02d-%02d %02d:%02d:%02d ",
+			cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
+			cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE),
+			cal.get(Calendar.SECOND)));
+		
 		StackTraceElement[] stack = new Throwable().getStackTrace();
 		if (stack.length > 2) {
 			StackTraceElement element = stack[2];
@@ -46,12 +54,12 @@ public abstract class Logger {
 				.append(':').append(element.getMethodName()).append("()\n");
 		}
 		
-		sb.append(content);
+		sb.append(content).append('\n');
 		
 		try {
 			onPrint(tag, level, sb.toString());
 		} catch (Exception e) {
-			System.err.println(e);
+			e.printStackTrace();
 		}
 	}
 	
@@ -60,6 +68,21 @@ public abstract class Logger {
 		
 		for (Object ct : content) {
 			sb.append(ct).append(' ');
+			
+			if (ct instanceof Throwable) {
+				Throwable throwable = (Throwable) ct;
+				StackTraceElement[] stack = throwable.getStackTrace();
+				
+				sb.append('\n');
+				
+				for (int i = 0; i < stack.length; i++) {
+					StackTraceElement element = stack[i];
+					
+					sb.append(element.getFileName()).append('-')
+						.append(element.getLineNumber()).append(':')
+						.append(element.getMethodName()).append("()\n");
+				}
+			}
 		}
 		
 		printInternal(tag, level, sb.toString());

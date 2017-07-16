@@ -17,17 +17,28 @@ public class NetClient {
 	protected int mPort;
 	
 	protected boolean mKeepConnect = true;
-	protected int mTimeout = 10;
 	protected long mReconnectInterval = 10000;
 	
-	protected boolean mIsReceiving = false;
-	protected final Runnable mReceiveRunnable = new Runnable() {
+	protected Runnable mReceiveRunnable = null;
+	protected class ReceiveRunable implements Runnable {
 		@Override
 		public void run() {
 			try {
+				synchronized (NetClient.this) {
+					if (mReceiveRunnable != this) {
+						return;
+					}
+				}
+				
 				InputStream is = mSocket.getInputStream();
 				
 				while (true) {
+					synchronized (NetClient.this) {
+						if (mReceiveRunnable != this) {
+							return;
+						}
+					}
+					
 					byte[] data = new byte[1024];
 					int length = is.read(data);
 					
@@ -44,15 +55,22 @@ public class NetClient {
 			}
 			
 			synchronized (NetClient.this) {
-				mIsReceiving = false;
-			
+				if (mReceiveRunnable != this) {
+					return;
+				}
+				
+				NetworkUtil.closeSocket(mSocket);
 				notifyDisconnected();
 				
-				if (mReconnectInterval > 0 && getStatus() != Status.Closed) {
+				if (mReconnectInterval > 0) {
 					try {
 						Thread.sleep(mReconnectInterval);
 					} catch (Exception e) {
 						Logger.getInstance().print(TAG, Level.E, e);
+					}
+					
+					if (mReceiveRunnable != this) {
+						return;
 					}
 					
 					connectAsync();
@@ -102,32 +120,23 @@ public class NetClient {
 		mKeepConnect = keep;
 	}
 	
-	public synchronized void setTimeout(int timeout) {
-		mTimeout = timeout;
-	}
-	
 	public synchronized boolean connect() {
-		if (mSocket == null) {
-			try {
-				mSocket = new Socket();
-				mSocket.setSoTimeout(mTimeout);
-				mSocket.setKeepAlive(mKeepConnect);
-				mSocket.connect(new InetSocketAddress(mHost, mPort));
-				
-				notifyConnected();
-			} catch (Exception e) {
-				Logger.getInstance().print(TAG, Level.E, e);
-				
-				notifyConnectFailed();
-				return false;
-			}
-		}
+		NetworkUtil.closeSocket(mSocket);
 		
-		if (mIsReceiving) {
+		try {
+			mSocket = new Socket();
+			mSocket.setKeepAlive(mKeepConnect);
+			mSocket.connect(new InetSocketAddress(mHost, mPort));
+			
+			notifyConnected();
+		} catch (Exception e) {
+			Logger.getInstance().print(TAG, Level.E, e);
+			
+			notifyConnectFailed();
 			return false;
 		}
-		mIsReceiving = true;
 		
+		mReceiveRunnable = new ReceiveRunable();
 		ThreadUtil.getVice().run(mReceiveRunnable);
 		return true;
 	}
@@ -145,6 +154,7 @@ public class NetClient {
 		try {
 			OutputStream os = mSocket.getOutputStream();
 			os.write(data, offset, length);
+			os.flush();
 			
 			notifySended(true);
 			return true;
@@ -168,8 +178,7 @@ public class NetClient {
 	public synchronized boolean close() {
 		try {
 			if (mSocket != null && mSocket.isClosed() == false) {
-				mSocket.close();
-				
+				NetworkUtil.closeSocket(mSocket);
 				notifyClosed();
 				return true;
 			}

@@ -13,17 +13,32 @@ public class FileLogger extends Logger {
 	protected long mLengthLimit = 1024 * 1024 * 16;
 	
 	public synchronized void setFiles(String... paths) {
-		mFileList.clear();
+		File[] files = new File[paths.length];
 		
-		for (String path : paths) {
-			mFileList.add(new File(path));
+		for (int i = 0; i < files.length; i++) {
+			files[i] = new File(paths[i]);
 		}
+		
+		setFiles(files);
 	}
 	
 	public synchronized void setFiles(File... files) {
 		mFileList.clear();
 		
 		for (File file : files) {
+			try {
+				File parent = file.getParentFile();
+				if (parent != null && parent.exists() == false) {
+					parent.mkdirs();
+				}
+				
+				if (file.exists() == false) {
+					file.createNewFile();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
 			mFileList.add(file);
 		}
 	}

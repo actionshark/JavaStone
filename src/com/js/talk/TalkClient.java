@@ -4,16 +4,14 @@ import com.js.log.Level;
 import com.js.log.Logger;
 import com.js.network.IClientListener;
 import com.js.network.NetClient;
-import com.js.talk.DataParser.IOnParseListener;
-
-import net.sf.json.JSONObject;
+import com.js.talk.DataCoder.IOnDecodeListener;
 
 public class TalkClient {
 	public static final String TAG = TalkClient.class.getSimpleName();
 	
 	protected NetClient mClient;
 	
-	protected final DataParser mParser = new DataParser();
+	protected final DataCoder mParser = new DataCoder();
 	
 	protected ITalkClientListener mListener;
 	
@@ -24,12 +22,21 @@ public class TalkClient {
 		mClient = client;
 	}
 	
+	public synchronized NetClient getClient() {
+		return mClient;
+	}
+	
 	public synchronized void setListener(ITalkClientListener listener) {
 		mListener = listener;
 	}
 	
+	public synchronized void send(byte[] data) {
+		send(data, 0, data.length);
+	}
+	
 	public synchronized void send(byte[] data, int offset, int length) {
-		mClient.sendAsync(data, offset, length);
+		byte[] bs = DataCoder.encode(data, offset, length);
+		mClient.sendAsync(bs, 0, bs.length);
 	}
 	
 	public synchronized void start() {
@@ -40,22 +47,18 @@ public class TalkClient {
 			@Override
 			public void onReceived(NetClient client, byte[] data, int offset, int length) {
 				synchronized (TalkClient.this) {
-					boolean ret = mParser.parse(data, offset, length, new IOnParseListener() {
+					mParser.decode(data, offset, length, new IOnDecodeListener() {
 						@Override
-						public void onParse(JSONObject jo) {
+						public void onDecode(byte[] data, int offset, int length) {
 							if (mListener != null) {
 								try {
-									mListener.onReceived(TalkClient.this, jo);
+									mListener.onReceived(TalkClient.this, data, offset, length);
 								} catch (Exception e) {
 									Logger.getInstance().print(TAG, Level.E, e);
 								}
 							}
 						}
 					});
-					
-					if (ret == false) {
-						mClient.close();
-					}
 				}
 			}
 			
@@ -65,18 +68,54 @@ public class TalkClient {
 			
 			@Override
 			public void onConnected(NetClient client) {
+				synchronized (TalkClient.this) {
+					if (mListener != null) {
+						try {
+							mListener.onConnected(TalkClient.this);
+						} catch (Exception e) {
+							Logger.getInstance().print(TAG, Level.E, e);
+						}
+					}
+				}
 			}
 			
 			@Override
 			public void onConnectFailed(NetClient client) {
+				synchronized (TalkClient.this) {
+					if (mListener != null) {
+						try {
+							mListener.onConnectFailed(TalkClient.this);
+						} catch (Exception e) {
+							Logger.getInstance().print(TAG, Level.E, e);
+						}
+					}
+				}
 			}
 			
 			@Override
 			public void onDisconnected(NetClient client) {
+				synchronized (TalkClient.this) {
+					if (mListener != null) {
+						try {
+							mListener.onDisconnected(TalkClient.this);
+						} catch (Exception e) {
+							Logger.getInstance().print(TAG, Level.E, e);
+						}
+					}
+				}
 			}
 			
 			@Override
 			public void onClosed(NetClient client) {
+				synchronized (TalkClient.this) {
+					if (mListener != null) {
+						try {
+							mListener.onClosed(TalkClient.this);
+						} catch (Exception e) {
+							Logger.getInstance().print(TAG, Level.E, e);
+						}
+					}
+				}
 			}
 		});
 	}

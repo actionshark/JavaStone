@@ -6,8 +6,8 @@ import com.js.log.Logger;
 public class ThreadUtil {
 	public static final String TAG = ThreadUtil.class.getSimpleName();
 	
-	private static ThreadUtil sMainInstance;
-	private static ThreadUtil sViceInstance;
+	private static ThreadUtil sMainInstance = new ThreadUtil(new DefaultExecutor());
+	private static ThreadUtil sViceInstance = new ThreadUtil(new DefaultExecutor());
 	
 	public static synchronized void setMain(IExecutor executor) {
 		sMainInstance = new ThreadUtil(executor);
@@ -18,18 +18,10 @@ public class ThreadUtil {
 	}
 	
 	public static synchronized ThreadUtil getMain() {
-		if (sMainInstance == null) {
-			sMainInstance = new ThreadUtil(new DefaultExecutor());
-		}
-		
 		return sMainInstance;
 	}
 	
 	public static synchronized ThreadUtil getVice() {
-		if (sViceInstance == null) {
-			sViceInstance = new ThreadUtil(new DefaultExecutor());
-		}
-		
 		return sViceInstance;
 	}
 	
