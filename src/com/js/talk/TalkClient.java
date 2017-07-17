@@ -80,11 +80,11 @@ public class TalkClient {
 			}
 			
 			@Override
-			public void onConnectFailed(NetClient client) {
+			public void onConnecting(NetClient client) {
 				synchronized (TalkClient.this) {
 					if (mListener != null) {
 						try {
-							mListener.onConnectFailed(TalkClient.this);
+							mListener.onConnecting(TalkClient.this);
 						} catch (Exception e) {
 							Logger.getInstance().print(TAG, Level.E, e);
 						}
@@ -93,24 +93,11 @@ public class TalkClient {
 			}
 			
 			@Override
-			public void onDisconnected(NetClient client) {
+			public void onOffline(NetClient client) {
 				synchronized (TalkClient.this) {
 					if (mListener != null) {
 						try {
-							mListener.onDisconnected(TalkClient.this);
-						} catch (Exception e) {
-							Logger.getInstance().print(TAG, Level.E, e);
-						}
-					}
-				}
-			}
-			
-			@Override
-			public void onClosed(NetClient client) {
-				synchronized (TalkClient.this) {
-					if (mListener != null) {
-						try {
-							mListener.onClosed(TalkClient.this);
+							mListener.onOffline(TalkClient.this);
 						} catch (Exception e) {
 							Logger.getInstance().print(TAG, Level.E, e);
 						}

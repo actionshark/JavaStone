@@ -5,6 +5,10 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 public class NetworkUtil {
+	public static enum Status {
+		Offline, Connecting, Connected,
+	}
+	
 	public static void closeSocket(Socket socket) {
 		try {
 			if (socket == null) {

@@ -4,9 +4,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.concurrent.Semaphore;
 
 import com.js.log.Level;
 import com.js.log.Logger;
+import com.js.network.NetworkUtil.Status;
 import com.js.thread.ThreadUtil;
 
 public class NetClient {
@@ -16,29 +18,21 @@ public class NetClient {
 	protected String mHost;
 	protected int mPort;
 	
+	protected Status mStatus = Status.Offline;
+	
 	protected boolean mKeepConnect = true;
 	protected long mReconnectInterval = 10000;
 	
-	protected Runnable mReceiveRunnable = null;
-	protected class ReceiveRunable implements Runnable {
+	protected final Semaphore mReceiveSema = new Semaphore(0);
+	protected final Runnable mReceiveRunnable = new Runnable() {
 		@Override
 		public void run() {
 			try {
-				synchronized (NetClient.this) {
-					if (mReceiveRunnable != this) {
-						return;
-					}
-				}
+				mReceiveSema.acquire();
 				
 				InputStream is = mSocket.getInputStream();
 				
-				while (true) {
-					synchronized (NetClient.this) {
-						if (mReceiveRunnable != this) {
-							return;
-						}
-					}
-					
+				while (mStatus == Status.Connected) {
 					byte[] data = new byte[1024];
 					int length = is.read(data);
 					
@@ -54,54 +48,14 @@ public class NetClient {
 				Logger.getInstance().print(TAG, Level.E, e);
 			}
 			
-			synchronized (NetClient.this) {
-				if (mReceiveRunnable != this) {
-					return;
-				}
-				
-				NetworkUtil.closeSocket(mSocket);
-				notifyDisconnected();
-				
-				if (mReconnectInterval > 0) {
-					try {
-						Thread.sleep(mReconnectInterval);
-					} catch (Exception e) {
-						Logger.getInstance().print(TAG, Level.E, e);
-					}
-					
-					if (mReceiveRunnable != this) {
-						return;
-					}
-					
-					connectAsync();
-				}
-			}
+			close(true);
 		}
 	};
 	
 	protected IClientListener mListener;
 	
 	public NetClient() {
-	}
-	
-	public synchronized Status getStatus() {
-		if (mSocket == null) {
-			return Status.None;
-		}
-		
-		if (mSocket.isClosed()) {
-			return Status.Closed;
-		}
-		
-		if (mSocket.isConnected()) {
-			return Status.Connected;
-		}
-		
-		if (mSocket.isBound()) {
-			return Status.Disconnected;
-		}
-		
-		return Status.None;
+		ThreadUtil.getVice().run(mReceiveRunnable);
 	}
 	
 	public synchronized void setSocket(Socket socket) {
@@ -116,32 +70,49 @@ public class NetClient {
 		mPort = port;
 	}
 	
+	public synchronized Status getStatus() {
+		return mStatus;
+	}
+	
 	public synchronized void setKeepConnect(boolean keep) {
 		mKeepConnect = keep;
 	}
 	
+	public synchronized void setReconnectInterval(long interval) {
+		mReconnectInterval = interval;
+	}
+	
+	public synchronized void setListener(IClientListener listener) {
+		mListener = listener;
+	}
+	
 	public synchronized boolean connect() {
-		NetworkUtil.closeSocket(mSocket);
+		close(false);
 		
 		try {
 			mSocket = new Socket();
+			mSocket.setTcpNoDelay(true);
 			mSocket.setKeepAlive(mKeepConnect);
+			
+			mStatus = Status.Connecting;
+			notifyConnecting();
+			
 			mSocket.connect(new InetSocketAddress(mHost, mPort));
 			
+			mStatus = Status.Connected;
 			notifyConnected();
+			
+			mReceiveSema.release();
+			return true;
 		} catch (Exception e) {
 			Logger.getInstance().print(TAG, Level.E, e);
-			
-			notifyConnectFailed();
-			return false;
 		}
-		
-		mReceiveRunnable = new ReceiveRunable();
-		ThreadUtil.getVice().run(mReceiveRunnable);
-		return true;
+
+		close(true);
+		return false;
 	}
 	
-	public synchronized void connectAsync() {
+	public void connectAsync() {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
@@ -150,7 +121,7 @@ public class NetClient {
 		});
 	}
 	
-	public boolean send(byte[] data, int offset, int length) {
+	public synchronized boolean send(byte[] data, int offset, int length) {
 		try {
 			OutputStream os = mSocket.getOutputStream();
 			os.write(data, offset, length);
@@ -175,27 +146,38 @@ public class NetClient {
 		});
 	}
 	
-	public synchronized boolean close() {
-		try {
-			if (mSocket != null && mSocket.isClosed() == false) {
-				NetworkUtil.closeSocket(mSocket);
-				notifyClosed();
-				return true;
-			}
-		} catch (Exception e) {
-			Logger.getInstance().print(TAG, Level.E, e);
-		}
+	public synchronized void close(boolean reconnect) {
+		NetworkUtil.closeSocket(mSocket);
+		mSocket = null;
 		
-		return false;
+		if (mStatus != Status.Offline) {
+			mStatus = Status.Offline;
+			notifyOffline();
+			
+			if (reconnect && mReconnectInterval > 0) {
+				ThreadUtil.getVice().run(new Runnable() {
+					@Override
+					public void run() {
+						synchronized (NetClient.this) {
+							try {
+								Thread.sleep(mReconnectInterval);
+							} catch (Exception e) {
+								Logger.getInstance().print(TAG, Level.E, e);
+							}
+							
+							connect();
+						}
+					}
+				});
+			}
+		}
 	}
 	
 	////////////////////////////////////////////////////////////////////////////
 	
-	public synchronized void setListener(IClientListener listener) {
-		mListener = listener;
-	}
-	
 	protected void notifyConnected() {
+		Logger.getInstance().print(TAG, Level.D);
+		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
@@ -208,39 +190,30 @@ public class NetClient {
 		});
 	}
 	
-	protected void notifyConnectFailed() {
+	protected void notifyConnecting() {
+		Logger.getInstance().print(TAG, Level.D);
+		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onConnectFailed(NetClient.this);
+						mListener.onConnecting(NetClient.this);
 					}
 				}
 			}
 		});
 	}
 	
-	protected void notifyDisconnected() {
+	protected void notifyOffline() {
+		Logger.getInstance().print(TAG, Level.D);
+		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onDisconnected(NetClient.this);
-					}
-				}
-			}
-		});
-	}
-	
-	protected void notifyClosed() {
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				synchronized (NetClient.this) {
-					if (mListener != null) {
-						mListener.onClosed(NetClient.this);
+						mListener.onOffline(NetClient.this);
 					}
 				}
 			}
@@ -248,6 +221,8 @@ public class NetClient {
 	}
 	
 	protected void notifySended(final boolean success) {
+		Logger.getInstance().print(TAG, Level.D, success);
+		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
@@ -260,13 +235,18 @@ public class NetClient {
 		});
 	}
 	
-	protected void notifyReceived(final byte[] data, final int offset, final int length) {
+	protected void notifyReceived(final byte[] data,
+			final int offset, final int length) {
+		
+		Logger.getInstance().print(TAG, Level.D);
+		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (NetClient.this) {
 					if (mListener != null) {
-						mListener.onReceived(NetClient.this, data, offset, length);
+						mListener.onReceived(NetClient.this,
+							data, offset, length);
 					}
 				}
 			}

@@ -51,7 +51,7 @@ public class TalkServer <T extends UserInfo> {
 			T ou = mUserInfos.remove(id);
 			
 			mClientNodes.remove(ou.client.getClient());
-			ou.client.getClient().close();
+			ou.client.getClient().close(false);
 		}
 	}
 	
@@ -64,6 +64,8 @@ public class TalkServer <T extends UserInfo> {
 		mServer.setListener(new IServerListener() {
 			@Override
 			public void onAccepted(NetServer server, NetClient client) {
+				Logger.getInstance().print(TAG, Level.D);
+				
 				ClientNode cn = new ClientNode();
 				
 				cn.client = new TalkClient();
@@ -75,6 +77,8 @@ public class TalkServer <T extends UserInfo> {
 			@Override
 			public void onReceived(NetServer server, final NetClient client,
 					byte[] data, int offset, int length) {
+				
+				Logger.getInstance().print(TAG, Level.D);
 				
 				synchronized (TalkServer.this) {
 					final ClientNode cn = mClientNodes.get(client);
@@ -100,6 +104,8 @@ public class TalkServer <T extends UserInfo> {
 			
 			@Override
 			public void onLeaved(NetServer server, NetClient client) {
+				Logger.getInstance().print(TAG, Level.D);
+				
 				synchronized (TalkServer.this) {
 					if (mListener != null) {
 						ClientNode cn = mClientNodes.get(client);
@@ -120,19 +126,18 @@ public class TalkServer <T extends UserInfo> {
 			}
 			
 			@Override
+			public void onOffline(NetServer server) {
+				Logger.getInstance().print(TAG, Level.D);
+			}
+			
+			@Override
+			public void onConnecting(NetServer server) {
+				Logger.getInstance().print(TAG, Level.D);
+			}
+			
+			@Override
 			public void onConnected(NetServer server) {
-			}
-			
-			@Override
-			public void onConnectFailed(NetServer server) {
-			}
-			
-			@Override
-			public void onDisconnected(NetServer server) {
-			}
-			
-			@Override
-			public void onClosed(NetServer server) {
+				Logger.getInstance().print(TAG, Level.D);
 			}
 		});
 	}
