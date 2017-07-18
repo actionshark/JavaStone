@@ -9,6 +9,10 @@ public class ThreadUtil {
 	private static ThreadUtil sMainInstance = new ThreadUtil(new DefaultExecutor());
 	private static ThreadUtil sViceInstance = new ThreadUtil(new DefaultExecutor());
 	
+	public static void exitApp() {
+		System.exit(0);
+	}
+	
 	public static synchronized void setMain(IExecutor executor) {
 		sMainInstance = new ThreadUtil(executor);
 	}
