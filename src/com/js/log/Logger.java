@@ -19,17 +19,17 @@ public abstract class Logger {
 	
 	protected Level mLevelLimit = Level.D;
 	
-	public synchronized void setDefaultTag(String tag) {
+	public void setDefaultTag(String tag) {
 		mDefaultTag = tag;
 	}
 	
-	public synchronized void setLevelLimit(Level limit) {
+	public void setLevelLimit(Level limit) {
 		mLevelLimit = limit;
 	}
 	
 	protected abstract void onPrint(String tag, Level level, String content) throws Exception;
 	
-	protected synchronized void printInternal(String tag, Level level, String content) {
+	protected void printInternal(String tag, Level level, String content) {
 		if (level.getId() < mLevelLimit.getId()) {
 			return;
 		}
@@ -63,7 +63,7 @@ public abstract class Logger {
 		}
 	}
 	
-	public synchronized void print(String tag, Level level, Object... content) {
+	public void print(String tag, Level level, Object... content) {
 		StringBuilder sb = new StringBuilder();
 		
 		for (Object ct : content) {
@@ -88,7 +88,24 @@ public abstract class Logger {
 		printInternal(tag, level, sb.toString());
 	}
 	
-	public synchronized void printf(String tag, Level level, String format, Object... args) {
+	public void printf(String tag, Level level, String format, Object... args) {
 		printInternal(tag, level, String.format(format, args));
+	}
+	
+	public void prints(String tag, Level level) {
+		StackTraceElement[] stack = new Throwable().getStackTrace();
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append('\n');
+		
+		for (int i = 0; i < stack.length; i++) {
+			StackTraceElement element = stack[i];
+			
+			sb.append(element.getFileName()).append('-')
+				.append(element.getLineNumber()).append(':')
+				.append(element.getMethodName()).append("()\n");
+		}
+		
+		printInternal(tag, level, sb.toString());
 	}
 }

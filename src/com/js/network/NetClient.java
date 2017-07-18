@@ -21,34 +21,36 @@ public class NetClient {
 	protected Status mStatus = Status.Offline;
 	
 	protected boolean mKeepConnect = true;
-	protected long mReconnectInterval = 10000;
+	protected long mReconnectInterval = 5000;
 	
 	protected final Semaphore mReceiveSema = new Semaphore(0);
 	protected final Runnable mReceiveRunnable = new Runnable() {
 		@Override
 		public void run() {
-			try {
-				mReceiveSema.acquire();
-				
-				InputStream is = mSocket.getInputStream();
-				
-				while (mStatus == Status.Connected) {
-					byte[] data = new byte[1024];
-					int length = is.read(data);
+			while (true) {
+				try {
+					mReceiveSema.acquire();
 					
-					if (length > 0) {
-						notifyReceived(data, 0, length);
-					} else if (mKeepConnect) {
-						Thread.sleep(200);
-					} else {
-						break;
+					InputStream is = mSocket.getInputStream();
+					
+					while (mStatus == Status.Connected) {
+						byte[] data = new byte[1024];
+						int length = is.read(data);
+						
+						if (length > 0) {
+							notifyReceived(data, 0, length);
+						} else if (mKeepConnect) {
+							Thread.sleep(200);
+						} else {
+							break;
+						}
 					}
+				} catch (Exception e) {
+					Logger.getInstance().print(TAG, Level.E, e);
 				}
-			} catch (Exception e) {
-				Logger.getInstance().print(TAG, Level.E, e);
+				
+				close(true);
 			}
-			
-			close(true);
 		}
 	};
 	
@@ -93,7 +95,6 @@ public class NetClient {
 			mSocket = new Socket();
 			mSocket.setTcpNoDelay(true);
 			mSocket.setKeepAlive(mKeepConnect);
-			mSocket.setSoTimeout(60);
 			
 			mStatus = Status.Connecting;
 			notifyConnecting();
