@@ -51,7 +51,7 @@ public class TalkServer <T extends UserInfo> {
 			T ou = mUserInfos.remove(id);
 			
 			mClientNodes.remove(ou.client.getClient());
-			ou.client.getClient().close(false);
+			ou.client.getClient().close();
 		}
 	}
 	
@@ -107,19 +107,19 @@ public class TalkServer <T extends UserInfo> {
 				Logger.getInstance().print(TAG, Level.D);
 				
 				synchronized (TalkServer.this) {
-					if (mListener != null) {
-						ClientNode cn = mClientNodes.get(client);
+					ClientNode cn = mClientNodes.get(client);
 						
-						if (cn != null) {
-							try {
+					if (cn != null) {
+						if (cn.userInfo != null) {
+							removeUser(cn.userInfo.id);
+						}
+						
+						try {
+							if (mListener != null) {
 								mListener.onLeaved(TalkServer.this, cn.client, cn.userInfo);
-							} catch (Exception e) {
-								Logger.getInstance().print(TAG, Level.E, e);
 							}
-							
-							if (cn.userInfo != null) {
-								removeUser(cn.userInfo.id);
-							}
+						} catch (Exception e) {
+							Logger.getInstance().print(TAG, Level.E, e);
 						}
 					}
 				}

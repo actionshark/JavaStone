@@ -78,6 +78,7 @@ public class NetServer {
 			mStatus = Status.Connecting;
 			notifyConnecting();
 			
+			mSocket.setSoTimeout(60);
 			mSocket.bind(new InetSocketAddress(mPort));
 			
 			mStatus = Status.Connected;

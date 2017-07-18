@@ -93,6 +93,7 @@ public class NetClient {
 			mSocket = new Socket();
 			mSocket.setTcpNoDelay(true);
 			mSocket.setKeepAlive(mKeepConnect);
+			mSocket.setSoTimeout(60);
 			
 			mStatus = Status.Connecting;
 			notifyConnecting();
@@ -146,30 +147,37 @@ public class NetClient {
 		});
 	}
 	
-	public synchronized void close(boolean reconnect) {
+	public synchronized void close() {
+		mReconnectInterval = -1;
+		close(false);
+	}
+	
+	private synchronized void close(boolean reconnect) {
 		NetworkUtil.closeSocket(mSocket);
 		mSocket = null;
 		
 		if (mStatus != Status.Offline) {
 			mStatus = Status.Offline;
 			notifyOffline();
-			
-			if (reconnect && mReconnectInterval > 0) {
-				ThreadUtil.getVice().run(new Runnable() {
-					@Override
-					public void run() {
-						synchronized (NetClient.this) {
-							try {
-								Thread.sleep(mReconnectInterval);
-							} catch (Exception e) {
-								Logger.getInstance().print(TAG, Level.E, e);
-							}
-							
+		}
+		
+		if (reconnect && mReconnectInterval > 0) {
+			ThreadUtil.getVice().run(new Runnable() {
+				@Override
+				public void run() {
+					synchronized (NetClient.this) {
+						try {
+							Thread.sleep(mReconnectInterval);
+						} catch (Exception e) {
+							Logger.getInstance().print(TAG, Level.E, e);
+						}
+						
+						if (mStatus == Status.Offline && mReconnectInterval > 0) {
 							connect();
 						}
 					}
-				});
-			}
+				}
+			});
 		}
 	}
 	

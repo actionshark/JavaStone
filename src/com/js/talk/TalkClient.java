@@ -39,6 +39,10 @@ public class TalkClient {
 		mClient.sendAsync(bs, 0, bs.length);
 	}
 	
+	public synchronized void close() {
+		mClient.close();
+	}
+	
 	public synchronized void start() {
 		mParser.clear();
 		

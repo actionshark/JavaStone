@@ -90,40 +90,46 @@ public class BrcstMgr {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
+				Map<String, List<Object>> events;
+				Map<String, List<ListenerNode>> listeners;
+				
 				synchronized (BrcstMgr.this) {
-					for (Entry<String, List<Object>> events : mEvents.entrySet()) {
-						final String name = events.getKey();
-						List<Object> datas = events.getValue();
-						
-						List<ListenerNode> lns = mListeners.get(name);
-						if (lns == null) {
-							continue;
-						}
-						
-						for (final ListenerNode ln : lns) {
-							for (final Object data : datas) {
-								ThreadUtil tu;
-								if (ln.inMainThread) {
-									tu = ThreadUtil.getMain();
-								} else {
-									tu = ThreadUtil.getVice();
-								}
-								
-								tu.run(new Runnable() {
-									@Override
-									public void run() {
-										try {
-											ln.listener.onBroadcast(name, data);
-										} catch (Exception e) {
-											Logger.getInstance().print(TAG, Level.E, e);
-										}
-									}
-								});
-							}
-						}
+					events = new HashMap<String, List<Object>>(mEvents);
+					mEvents.clear();
+					listeners = new HashMap<String, List<ListenerNode>>(mListeners);
+				}
+				
+				for (Entry<String, List<Object>> event : events.entrySet()) {
+					final String name = event.getKey();
+					
+					List<ListenerNode> lns = listeners.get(name);
+					if (lns == null) {
+						continue;
 					}
 					
-					mEvents.clear();
+					List<Object> datas = event.getValue();
+					
+					for (final ListenerNode ln : lns) {
+						for (final Object data : datas) {
+							ThreadUtil tu;
+							if (ln.inMainThread) {
+								tu = ThreadUtil.getMain();
+							} else {
+								tu = ThreadUtil.getVice();
+							}
+							
+							tu.run(new Runnable() {
+								@Override
+								public void run() {
+									try {
+										ln.listener.onBroadcast(name, data);
+									} catch (Exception e) {
+										Logger.getInstance().print(TAG, Level.E, e);
+									}
+								}
+							});
+						}
+					}
 				}
 			}
 		});
