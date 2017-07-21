@@ -46,7 +46,6 @@ public class TalkClient {
 	public synchronized void start() {
 		mParser.clear();
 		
-		mClient.connectAsync();
 		mClient.setListener(new IClientListener() {
 			@Override
 			public void onReceived(NetClient client, byte[] data, int offset, int length) {
@@ -109,5 +108,7 @@ public class TalkClient {
 				}
 			}
 		});
+		
+		mClient.connectAsync();
 	}
 }

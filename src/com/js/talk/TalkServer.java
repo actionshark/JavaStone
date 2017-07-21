@@ -60,7 +60,6 @@ public class TalkServer <T extends UserInfo> {
 	}
 	
 	public synchronized void start() {
-		mServer.connectAsync();
 		mServer.setListener(new IServerListener() {
 			@Override
 			public void onAccepted(NetServer server, NetClient client) {
@@ -140,5 +139,7 @@ public class TalkServer <T extends UserInfo> {
 				Logger.getInstance().print(TAG, Level.D);
 			}
 		});
+		
+		mServer.connectAsync();
 	}
 }
