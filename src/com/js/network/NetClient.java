@@ -230,7 +230,7 @@ public class NetClient {
 	}
 	
 	protected void notifySended(final boolean success) {
-		Logger.getInstance().print(TAG, Level.D, success);
+		Logger.getInstance().print(TAG, Level.V, success);
 		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
@@ -247,7 +247,7 @@ public class NetClient {
 	protected void notifyReceived(final byte[] data,
 			final int offset, final int length) {
 		
-		Logger.getInstance().print(TAG, Level.D);
+		Logger.getInstance().print(TAG, Level.V);
 		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override

@@ -236,7 +236,7 @@ public class NetServer {
 	protected void notifyReceived(final NetClient client,
 			final byte[] data, final int length) {
 		
-		Logger.getInstance().print(TAG, Level.D);
+		Logger.getInstance().print(TAG, Level.V);
 		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
