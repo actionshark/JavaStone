@@ -71,40 +71,25 @@ public class TalkClient {
 			
 			@Override
 			public void onConnected(NetClient client) {
-				synchronized (TalkClient.this) {
-					if (mListener != null) {
-						try {
-							mListener.onConnected(TalkClient.this);
-						} catch (Exception e) {
-							Logger.getInstance().print(TAG, Level.E, e);
-						}
-					}
+				ITalkClientListener listener = mListener;
+				if (listener != null) {
+					listener.onConnected(TalkClient.this);
 				}
 			}
 			
 			@Override
 			public void onConnecting(NetClient client) {
-				synchronized (TalkClient.this) {
-					if (mListener != null) {
-						try {
-							mListener.onConnecting(TalkClient.this);
-						} catch (Exception e) {
-							Logger.getInstance().print(TAG, Level.E, e);
-						}
-					}
+				ITalkClientListener listener = mListener;
+				if (listener != null) {
+					listener.onConnecting(TalkClient.this);
 				}
 			}
 			
 			@Override
 			public void onOffline(NetClient client) {
-				synchronized (TalkClient.this) {
-					if (mListener != null) {
-						try {
-							mListener.onOffline(TalkClient.this);
-						} catch (Exception e) {
-							Logger.getInstance().print(TAG, Level.E, e);
-						}
-					}
+				ITalkClientListener listener = mListener;
+				if (listener != null) {
+					listener.onOffline(TalkClient.this);
 				}
 			}
 		});

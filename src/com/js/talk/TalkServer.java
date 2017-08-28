@@ -70,7 +70,9 @@ public class TalkServer <T extends UserInfo> {
 				cn.client = new TalkClient();
 				cn.client.setClient(client);
 				
-				mClientNodes.put(client, cn);
+				synchronized (TalkServer.this) {
+					mClientNodes.put(client, cn);
+				}
 			}
 			
 			@Override
@@ -79,22 +81,29 @@ public class TalkServer <T extends UserInfo> {
 				
 				Logger.getInstance().print(TAG, Level.D);
 				
+				ClientNode cn = null;
 				synchronized (TalkServer.this) {
-					final ClientNode cn = mClientNodes.get(client);
-					if (cn == null) {
-						return;
-					}
-					
+					cn = mClientNodes.get(client);
+				}
+				if (cn == null) {
+					return;
+				}
+				final ClientNode CN = cn;
+				
+				synchronized (cn.parser) {
 					cn.parser.decode(data, offset, length, new IOnDecodeListener() {
 						@Override
 						public void onDecode(byte[] data, int offset, int length) {
-							if (mListener != null) {
-								try {
-									mListener.onReceived(TalkServer.this, cn.client,
-										cn.userInfo, data, offset, length);
-								} catch (Exception e) {
-									Logger.getInstance().print(TAG, Level.E, e);
-								}
+							ITalkServerListener<T> listener = mListener;
+							if (listener == null) {
+								return;
+							}
+							
+							try {
+								listener.onReceived(TalkServer.this, CN.client,
+									CN.userInfo, data, offset, length);
+							} catch (Exception e) {
+								Logger.getInstance().print(TAG, Level.E, e);
 							}
 						}
 					});
@@ -105,22 +114,28 @@ public class TalkServer <T extends UserInfo> {
 			public void onLeaved(NetServer server, NetClient client) {
 				Logger.getInstance().print(TAG, Level.D);
 				
+				ClientNode cn = null;
 				synchronized (TalkServer.this) {
-					ClientNode cn = mClientNodes.get(client);
-						
-					if (cn != null) {
-						if (cn.userInfo != null) {
-							removeUser(cn.userInfo.id);
-						}
-						
-						try {
-							if (mListener != null) {
-								mListener.onLeaved(TalkServer.this, cn.client, cn.userInfo);
-							}
-						} catch (Exception e) {
-							Logger.getInstance().print(TAG, Level.E, e);
-						}
-					}
+					cn = mClientNodes.get(client);
+				}
+				
+				if (cn == null) {
+					return;
+				}
+				
+				if (cn.userInfo != null) {
+					removeUser(cn.userInfo.id);
+				}
+				
+				ITalkServerListener<T> listener = mListener;
+				if (listener == null) {
+					return;
+				}
+				
+				try {
+					listener.onLeaved(TalkServer.this, cn.client, cn.userInfo);
+				} catch (Exception e) {
+					Logger.getInstance().print(TAG, Level.E, e);
 				}
 			}
 			

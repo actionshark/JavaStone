@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.Semaphore;
 
 import com.js.log.Level;
 import com.js.log.Logger;
@@ -21,24 +20,31 @@ public class NetServer {
 	
 	protected boolean mKeepConnect = true;
 	protected long mRecreateInterval = 10000;
+	protected long mConnectCount = 0;
 	
-	protected final Semaphore mAcceptSema = new Semaphore(0);
-	protected final Runnable mAcceptRunnable = new Runnable() {
+	protected Runnable mAcceptRunnable;
+	protected class AcceptRunnable implements Runnable {
 		@Override
 		public void run() {
-			while (true) {
-				try {
-					mAcceptSema.acquire();
-					
-					while (mStatus == Status.Connected) {
-						Socket client = mSocket.accept();
-						onAccept(client);
+			try {
+				while (mStatus == Status.Connected) {
+					synchronized (NetServer.this) {
+						if (mAcceptRunnable != this) {
+							return;
+						}
 					}
-				} catch (Exception e) {
-					Logger.getInstance().print(TAG, Level.E, e);
+					
+					Socket client = mSocket.accept();
+					onAccept(client);
 				}
-				
-				close(true);
+			} catch (Exception e) {
+				Logger.getInstance().print(TAG, Level.E, e);
+			}
+
+			synchronized (NetServer.this) {
+				if (mAcceptRunnable == this) {
+					close(true);
+				}
 			}
 		}
 	};
@@ -46,7 +52,6 @@ public class NetServer {
 	protected IServerListener mListener;
 	
 	public NetServer() {
-		ThreadUtil.getVice().run(mAcceptRunnable);
 	}
 	
 	public synchronized void setPort(int port) {
@@ -83,7 +88,12 @@ public class NetServer {
 			mStatus = Status.Connected;
 			notifyConnected();
 			
-			mAcceptSema.release();
+			mAcceptRunnable = new AcceptRunnable();
+			ThreadUtil.getVice().run(mAcceptRunnable);
+			
+			mConnectCount++;
+			Logger.getInstance().print(TAG, Level.D, mConnectCount);
+			
 			return true;
 		} catch (Exception e) {
 			Logger.getInstance().print(TAG, Level.E, e);
@@ -112,6 +122,7 @@ public class NetServer {
 		}
 		
 		mSocket = null;
+		mAcceptRunnable = null;
 		
 		if (mStatus != Status.Offline) {
 			mStatus = Status.Offline;
@@ -179,10 +190,9 @@ public class NetServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetServer.this) {
-					if (mListener != null) {
-						mListener.onConnected(NetServer.this);
-					}
+				IServerListener listener = mListener;
+				if (listener != null) {
+					listener.onConnected(NetServer.this);
 				}
 			}
 		});
@@ -194,10 +204,9 @@ public class NetServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetServer.this) {
-					if (mListener != null) {
-						mListener.onConnecting(NetServer.this);
-					}
+				IServerListener listener = mListener;
+				if (listener != null) {
+					listener.onConnecting(NetServer.this);
 				}
 			}
 		});
@@ -209,10 +218,9 @@ public class NetServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetServer.this) {
-					if (mListener != null) {
-						mListener.onOffline(NetServer.this);
-					}
+				IServerListener listener = mListener;
+				if (listener != null) {
+					listener.onOffline(NetServer.this);
 				}
 			}
 		});
@@ -224,10 +232,9 @@ public class NetServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetServer.this) {
-					if (mListener != null) {
-						mListener.onAccepted(NetServer.this, client);
-					}
+				IServerListener listener = mListener;
+				if (listener != null) {
+					listener.onAccepted(NetServer.this, client);
 				}
 			}
 		});
@@ -241,11 +248,10 @@ public class NetServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetServer.this) {
-					if (mListener != null) {
-						mListener.onReceived(NetServer.this,
+				IServerListener listener = mListener;
+				if (listener != null) {
+					listener.onReceived(NetServer.this,
 							client, data, 0, length);
-					}
 				}
 			}
 		});
@@ -257,10 +263,9 @@ public class NetServer {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetServer.this) {
-					if (mListener != null) {
-						mListener.onLeaved(NetServer.this, client);
-					}
+				IServerListener listener = mListener;
+				if (listener != null) {
+					listener.onLeaved(NetServer.this, client);
 				}
 			}
 		});

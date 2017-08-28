@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.concurrent.Semaphore;
 
 import com.js.log.Level;
 import com.js.log.Logger;
@@ -23,33 +22,39 @@ public class NetClient {
 	protected boolean mKeepConnect = true;
 	protected long mReconnectInterval = 5000;
 	
-	protected final Semaphore mReceiveSema = new Semaphore(0);
-	protected final Runnable mReceiveRunnable = new Runnable() {
+	protected Runnable mReceiveRunnable;
+	protected class ReceiveRunnable implements Runnable {
 		@Override
 		public void run() {
-			while (true) {
-				try {
-					mReceiveSema.acquire();
-					
-					InputStream is = mSocket.getInputStream();
-					
-					while (mStatus == Status.Connected) {
-						byte[] data = new byte[1024];
-						int length = is.read(data);
-						
-						if (length > 0) {
-							notifyReceived(data, 0, length);
-						} else if (mKeepConnect) {
-							Thread.sleep(200);
-						} else {
-							break;
+			try {
+				InputStream is = mSocket.getInputStream();
+				
+				while (mStatus == Status.Connected) {
+					synchronized (NetClient.this) {
+						if (mReceiveRunnable != this) {
+							return;
 						}
 					}
-				} catch (Exception e) {
-					Logger.getInstance().print(TAG, Level.E, e);
+					
+					byte[] data = new byte[1024];
+					int length = is.read(data);
+					
+					if (length > 0) {
+						notifyReceived(data, 0, length);
+					} else if (mKeepConnect) {
+						Thread.sleep(100);
+					} else {
+						break;
+					}
 				}
-				
-				close(true);
+			} catch (Exception e) {
+				Logger.getInstance().print(TAG, Level.E, e);
+			}
+
+			synchronized (NetClient.this) {
+				if (mReceiveRunnable == this) {
+					close(true);
+				}
 			}
 		}
 	};
@@ -57,7 +62,6 @@ public class NetClient {
 	protected IClientListener mListener;
 	
 	public NetClient() {
-		ThreadUtil.getVice().run(mReceiveRunnable);
 	}
 	
 	public synchronized void setSocket(Socket socket) {
@@ -104,7 +108,8 @@ public class NetClient {
 			mStatus = Status.Connected;
 			notifyConnected();
 			
-			mReceiveSema.release();
+			mReceiveRunnable = new ReceiveRunnable();
+			ThreadUtil.getVice().run(mReceiveRunnable);
 			return true;
 		} catch (Exception e) {
 			Logger.getInstance().print(TAG, Level.E, e);
@@ -156,6 +161,7 @@ public class NetClient {
 	private synchronized void close(boolean reconnect) {
 		NetworkUtil.closeSocket(mSocket);
 		mSocket = null;
+		mReceiveRunnable = null;
 		
 		if (mStatus != Status.Offline) {
 			mStatus = Status.Offline;
@@ -190,10 +196,9 @@ public class NetClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetClient.this) {
-					if (mListener != null) {
-						mListener.onConnected(NetClient.this);
-					}
+				IClientListener listener = mListener;
+				if (listener != null) {
+					listener.onConnected(NetClient.this);
 				}
 			}
 		});
@@ -205,10 +210,9 @@ public class NetClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetClient.this) {
-					if (mListener != null) {
-						mListener.onConnecting(NetClient.this);
-					}
+				IClientListener listener = mListener;
+				if (listener != null) {
+					listener.onConnecting(NetClient.this);
 				}
 			}
 		});
@@ -220,10 +224,9 @@ public class NetClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetClient.this) {
-					if (mListener != null) {
-						mListener.onOffline(NetClient.this);
-					}
+				IClientListener listener = mListener;
+				if (listener != null) {
+					listener.onOffline(NetClient.this);
 				}
 			}
 		});
@@ -235,10 +238,9 @@ public class NetClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetClient.this) {
-					if (mListener != null) {
-						mListener.onSended(NetClient.this, success);
-					}
+				IClientListener listener = mListener;
+				if (listener != null) {
+					listener.onSended(NetClient.this, success);
 				}
 			}
 		});
@@ -252,11 +254,10 @@ public class NetClient {
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
-				synchronized (NetClient.this) {
-					if (mListener != null) {
-						mListener.onReceived(NetClient.this,
+				IClientListener listener = mListener;
+				if (listener != null) {
+					listener.onReceived(NetClient.this,
 							data, offset, length);
-					}
 				}
 			}
 		});
