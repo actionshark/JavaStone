@@ -49,7 +49,7 @@ public class TalkClient {
 		mClient.setListener(new IClientListener() {
 			@Override
 			public void onReceived(NetClient client, byte[] data, int offset, int length) {
-				synchronized (TalkClient.this) {
+				synchronized (mParser) {
 					mParser.decode(data, offset, length, new IOnDecodeListener() {
 						@Override
 						public void onDecode(byte[] data, int offset, int length) {

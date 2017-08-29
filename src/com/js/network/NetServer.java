@@ -132,17 +132,9 @@ public class NetServer {
 				ThreadUtil.getVice().run(new Runnable() {
 					@Override
 					public void run() {
-						synchronized (NetServer.this) {
-							try {
-								Thread.sleep(mRecreateInterval);
-							} catch (Exception e) {
-								Logger.getInstance().print(TAG, Level.E, e);
-							}
-							
-							connect();
-						}
+						connect();
 					}
-				});
+				}, mRecreateInterval);
 			}
 		}
 	}
@@ -151,11 +143,11 @@ public class NetServer {
 		final NetClient client = new NetClient();
 		client.setSocket(socket);
 		
-		notifyAccepted(client);
-		
 		ThreadUtil.getVice().run(new Runnable() {
 			@Override
 			public void run() {
+				notifyAccepted(client);
+				
 				try {
 					InputStream is = socket.getInputStream();
 					
@@ -166,7 +158,7 @@ public class NetServer {
 						if (length > 0) {
 							notifyReceived(client, data, length);
 						} else if (mKeepConnect) {
-							Thread.sleep(200);
+							Thread.sleep(100);
 						} else {
 							break;
 						}
@@ -187,87 +179,57 @@ public class NetServer {
 	protected void notifyConnected() {
 		Logger.getInstance().print(TAG, Level.D);
 		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IServerListener listener = mListener;
-				if (listener != null) {
-					listener.onConnected(NetServer.this);
-				}
-			}
-		});
+		IServerListener listener = mListener;
+		if (listener != null) {
+			listener.onConnected(NetServer.this);
+		}
 	}
 	
 	protected void notifyConnecting() {
 		Logger.getInstance().print(TAG, Level.D);
-		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IServerListener listener = mListener;
-				if (listener != null) {
-					listener.onConnecting(NetServer.this);
-				}
-			}
-		});
+
+		IServerListener listener = mListener;
+		if (listener != null) {
+			listener.onConnecting(NetServer.this);
+		}
 	}
 	
 	protected void notifyOffline() {
 		Logger.getInstance().print(TAG, Level.D);
 		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IServerListener listener = mListener;
-				if (listener != null) {
-					listener.onOffline(NetServer.this);
-				}
-			}
-		});
+		IServerListener listener = mListener;
+		if (listener != null) {
+			listener.onOffline(NetServer.this);
+		}
 	}
 	
 	protected void notifyAccepted(final NetClient client) {
 		Logger.getInstance().print(TAG, Level.D);
 		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IServerListener listener = mListener;
-				if (listener != null) {
-					listener.onAccepted(NetServer.this, client);
-				}
-			}
-		});
+		IServerListener listener = mListener;
+		if (listener != null) {
+			listener.onAccepted(NetServer.this, client);
+		}
 	}
 
 	protected void notifyReceived(final NetClient client,
 			final byte[] data, final int length) {
 		
 		Logger.getInstance().print(TAG, Level.V);
-		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IServerListener listener = mListener;
-				if (listener != null) {
-					listener.onReceived(NetServer.this,
-							client, data, 0, length);
-				}
-			}
-		});
+
+		IServerListener listener = mListener;
+		if (listener != null) {
+			listener.onReceived(NetServer.this,
+					client, data, 0, length);
+		}
 	}
 	
 	protected void notifyLeaved(final NetClient client) {
 		Logger.getInstance().print(TAG, Level.D);
 		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IServerListener listener = mListener;
-				if (listener != null) {
-					listener.onLeaved(NetServer.this, client);
-				}
-			}
-		});
+		IServerListener listener = mListener;
+		if (listener != null) {
+			listener.onLeaved(NetServer.this, client);
+		}
 	}
 }

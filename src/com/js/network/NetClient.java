@@ -173,18 +173,12 @@ public class NetClient {
 				@Override
 				public void run() {
 					synchronized (NetClient.this) {
-						try {
-							Thread.sleep(mReconnectInterval);
-						} catch (Exception e) {
-							Logger.getInstance().print(TAG, Level.E, e);
-						}
-						
 						if (mStatus == Status.Offline && mReconnectInterval > 0) {
 							connect();
 						}
 					}
 				}
-			});
+			}, mReconnectInterval);
 		}
 	}
 	
@@ -193,57 +187,37 @@ public class NetClient {
 	protected void notifyConnected() {
 		Logger.getInstance().print(TAG, Level.D);
 		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IClientListener listener = mListener;
-				if (listener != null) {
-					listener.onConnected(NetClient.this);
-				}
-			}
-		});
+		IClientListener listener = mListener;
+		if (listener != null) {
+			listener.onConnected(NetClient.this);
+		}
 	}
 	
 	protected void notifyConnecting() {
 		Logger.getInstance().print(TAG, Level.D);
 		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IClientListener listener = mListener;
-				if (listener != null) {
-					listener.onConnecting(NetClient.this);
-				}
-			}
-		});
+		IClientListener listener = mListener;
+		if (listener != null) {
+			listener.onConnecting(NetClient.this);
+		}
 	}
 	
 	protected void notifyOffline() {
 		Logger.getInstance().print(TAG, Level.D);
 		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IClientListener listener = mListener;
-				if (listener != null) {
-					listener.onOffline(NetClient.this);
-				}
-			}
-		});
+		IClientListener listener = mListener;
+		if (listener != null) {
+			listener.onOffline(NetClient.this);
+		}
 	}
 	
 	protected void notifySended(final boolean success) {
 		Logger.getInstance().print(TAG, Level.V, success);
-		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IClientListener listener = mListener;
-				if (listener != null) {
-					listener.onSended(NetClient.this, success);
-				}
-			}
-		});
+
+		IClientListener listener = mListener;
+		if (listener != null) {
+			listener.onSended(NetClient.this, success);
+		}
 	}
 	
 	protected void notifyReceived(final byte[] data,
@@ -251,15 +225,10 @@ public class NetClient {
 		
 		Logger.getInstance().print(TAG, Level.V);
 		
-		ThreadUtil.getVice().run(new Runnable() {
-			@Override
-			public void run() {
-				IClientListener listener = mListener;
-				if (listener != null) {
-					listener.onReceived(NetClient.this,
-							data, offset, length);
-				}
-			}
-		});
+		IClientListener listener = mListener;
+		if (listener != null) {
+			listener.onReceived(NetClient.this,
+					data, offset, length);
+		}
 	}
 }

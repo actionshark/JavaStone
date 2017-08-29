@@ -56,8 +56,31 @@ public class ThreadUtil {
 	}
 	
 
-	public ThreadHandler run(Runnable runnable, long firstDelay) {
-		return run(runnable, firstDelay, 0, 1, false);
+	public ThreadHandler run(final Runnable runnable, long firstDelay) {
+		final ThreadHandler handler = new ThreadHandler();
+		handler.mStatus = ThreadHandler.Status.Running;
+		
+		handler.mRunnable = new Runnable() {
+			@Override
+			public void run() {
+				synchronized (handler) {
+					if (handler.mTryCancel) {
+						handler.mStatus = ThreadHandler.Status.Cancelled;
+						return;
+					}
+				}
+				
+				callRunnable(runnable);
+				
+				synchronized (handler) {
+					handler.mStatus = ThreadHandler.Status.Finished;
+				}
+			}
+		};
+			
+		mExecutor.run(handler.mRunnable, firstDelay);
+		
+		return handler;
 	}
 
 	public ThreadHandler run(Runnable runnable, long firstDelay, long repeatDelay) {
