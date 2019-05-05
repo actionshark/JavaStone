@@ -88,8 +88,8 @@ public abstract class Logger {
 						cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND)));
 
 		StackTraceElement[] stack = new Throwable().getStackTrace();
-		if (stack.length > 2) {
-			StackTraceElement element = stack[2];
+		if (stack.length > 3) {
+			StackTraceElement element = stack[3];
 
 			sb.append(element.getFileName()).append('-').append(element.getLineNumber()).append(':')
 					.append(element.getMethodName()).append("()\n");
