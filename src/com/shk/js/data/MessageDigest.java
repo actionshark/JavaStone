@@ -1,4 +1,4 @@
-package com.shk.js.security;
+package com.shk.js.data;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -6,7 +6,6 @@ import java.io.InputStream;
 
 import com.shk.js.log.Level;
 import com.shk.js.log.Logger;
-import com.shk.js.type.Convert;
 
 public class MessageDigest {
 	private java.security.MessageDigest mMD;
