@@ -19,7 +19,6 @@ public class BrcstMgr {
 
 	private static class ListenerNode {
 		public IBrcstListener listener;
-		public boolean inMainThread = false;
 	}
 
 	private final Map<String, List<Object>> mEvents = new HashMap<String, List<Object>>();
@@ -39,12 +38,7 @@ public class BrcstMgr {
 		run();
 	}
 
-	public void addListener(String name, IBrcstListener listener) {
-		addListener(name, listener, false);
-	}
-
-	public synchronized void addListener(String name, IBrcstListener listener, boolean inMainThread) {
-
+	public synchronized void addListener(String name, IBrcstListener listener) {
 		List<ListenerNode> list = mListeners.get(name);
 
 		if (list == null) {
@@ -54,7 +48,6 @@ public class BrcstMgr {
 
 		ListenerNode ln = new ListenerNode();
 		ln.listener = listener;
-		ln.inMainThread = inMainThread;
 
 		list.add(ln);
 	}
@@ -83,7 +76,7 @@ public class BrcstMgr {
 	}
 
 	private void run() {
-		ThreadUtil.getVice().run(new Runnable() {
+		ThreadUtil.getInstance().run(new Runnable() {
 			@Override
 			public void run() {
 				Map<String, List<Object>> events;
@@ -107,12 +100,7 @@ public class BrcstMgr {
 
 					for (final ListenerNode ln : lns) {
 						for (final Object data : datas) {
-							ThreadUtil tu;
-							if (ln.inMainThread) {
-								tu = ThreadUtil.getMain();
-							} else {
-								tu = ThreadUtil.getVice();
-							}
+							ThreadUtil tu = ThreadUtil.getInstance();
 
 							tu.run(new Runnable() {
 								@Override

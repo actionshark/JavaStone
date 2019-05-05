@@ -11,9 +11,9 @@ import com.shk.js.log.Logger;
 
 public class StreamReader {
 	private static final int BUF_SIZE = 1024 * 1024;
-	
+
 	private InputStream mInputStream;
-	
+
 	public StreamReader(String filepath) {
 		try {
 			mInputStream = new FileInputStream(filepath);
@@ -21,7 +21,7 @@ public class StreamReader {
 			Logger.print(Level.E, e);
 		}
 	}
-	
+
 	public StreamReader(File file) {
 		try {
 			mInputStream = new FileInputStream(file);
@@ -29,29 +29,29 @@ public class StreamReader {
 			Logger.print(Level.E, e);
 		}
 	}
-	
+
 	public StreamReader(InputStream is) {
 		mInputStream = is;
 	}
-	
+
 	public byte[] readBytes() {
 		return readBytes(Integer.MAX_VALUE);
 	}
-	
+
 	public byte[] readBytes(int max) {
 		List<byte[]> list = new ArrayList<byte[]>();
 		int offset = 0;
-		
+
 		try {
 			byte[] bs = new byte[BUF_SIZE];
-			
+
 			while (true) {
 				int m = Math.min(bs.length - offset, max);
 				int len = mInputStream.read(bs, offset, m);
 				if (len <= 0) {
 					break;
 				}
-				
+
 				offset += len;
 				if (offset >= bs.length) {
 					list.add(bs);
@@ -64,38 +64,38 @@ public class StreamReader {
 					break;
 				}
 			}
-			
+
 			list.add(bs);
 		} catch (Exception e) {
 			Logger.print(Level.E, e);
 		}
-		
+
 		byte[] bytes = new byte[BUF_SIZE * (list.size() - 1) + offset];
 		int os = 0;
-		
+
 		for (int i = 0; i < list.size() - 1; i++) {
 			byte[] bs = list.get(i);
-			
+
 			for (int j = 0; j < bs.length; j++) {
 				bytes[os++] = bs[j];
 			}
 		}
-		
+
 		if (offset > 0) {
 			byte[] bs = list.get(list.size() - 1);
-			
+
 			for (int i = 0; i < offset; i++) {
 				bytes[os++] = bs[i];
 			}
 		}
-		
+
 		return bytes;
 	}
-	
+
 	public String readString() {
 		return new String(readBytes());
 	}
-	
+
 	public void close() {
 		try {
 			mInputStream.close();

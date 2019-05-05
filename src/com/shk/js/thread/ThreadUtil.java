@@ -4,27 +4,14 @@ import com.shk.js.log.Level;
 import com.shk.js.log.Logger;
 
 public class ThreadUtil {
-	private static ThreadUtil sMainInstance = new ThreadUtil(new DefaultExecutor());
-	private static ThreadUtil sViceInstance = new ThreadUtil(new DefaultExecutor());
+	private static ThreadUtil sInstance = new ThreadUtil(new DefaultExecutor());
 
-	public static void exitApp() {
-		System.exit(0);
+	public static void setInstance(IExecutor executor) {
+		sInstance = new ThreadUtil(executor);
 	}
 
-	public static synchronized void setMain(IExecutor executor) {
-		sMainInstance = new ThreadUtil(executor);
-	}
-
-	public static synchronized void setVice(IExecutor executor) {
-		sViceInstance = new ThreadUtil(executor);
-	}
-
-	public static synchronized ThreadUtil getMain() {
-		return sMainInstance;
-	}
-
-	public static synchronized ThreadUtil getVice() {
-		return sViceInstance;
+	public static ThreadUtil getInstance() {
+		return sInstance;
 	}
 
 	public static boolean sleep(long millis) {
@@ -39,6 +26,10 @@ public class ThreadUtil {
 		}
 
 		return false;
+	}
+
+	public static void exitApp() {
+		System.exit(0);
 	}
 
 	/////////////////////////////////////////////////////////////////////////
