@@ -12,8 +12,6 @@ import com.shk.js.log.Logger;
 import com.shk.js.thread.ThreadUtil;
 
 public class Zip implements IArchive {
-	public static final String TAG = Zip.class.getSimpleName();
-
 	private IArchiveListener mListener;
 
 	@Override
@@ -46,7 +44,7 @@ public class Zip implements IArchive {
 			while ((entry = zis.getNextEntry()) != null) {
 				String name = entry.getName();
 				File file = new File(dir, name);
-				
+
 				if (entry.isDirectory()) {
 					if (file.exists() == false) {
 						file.mkdirs();
@@ -56,24 +54,24 @@ public class Zip implements IArchive {
 					if (parent.exists() == false) {
 						parent.mkdirs();
 					}
-					
+
 					FileOutputStream output = new FileOutputStream(file);
 					int len = -1;
 					while ((len = zis.read(buf)) > 0) {
 						output.write(buf, 0, len);
 					}
-					
+
 					output.close();
 				}
-				
+
 				notityProgress(name, file.getPath());
 			}
-			
+
 			zis.close();
-			
+
 			notityFinish();
 		} catch (Exception e) {
-			Logger.getInstance().print(TAG, Level.E, e);
+			Logger.print(Level.E, e);
 
 			notityException(e);
 		}

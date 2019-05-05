@@ -7,10 +7,8 @@ import com.shk.js.log.Level;
 import com.shk.js.log.Logger;
 
 public class DefaultExecutor implements IExecutor {
-	public static final String TAG = DefaultExecutor.class.getSimpleName();
-	
 	private final ExecutorService mService;
-	
+
 	public DefaultExecutor() {
 		mService = Executors.newCachedThreadPool();
 	}
@@ -21,11 +19,11 @@ public class DefaultExecutor implements IExecutor {
 			@Override
 			public void run() {
 				ThreadUtil.sleep(delay);
-				
+
 				try {
 					runnable.run();
 				} catch (Exception e) {
-					Logger.getInstance().print(TAG, Level.E, e);
+					Logger.print(Level.E, e);
 				}
 			}
 		});

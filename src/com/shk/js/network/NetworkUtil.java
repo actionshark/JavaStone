@@ -8,22 +8,28 @@ public class NetworkUtil {
 	public static enum Status {
 		Offline, Connecting, Connected,
 	}
-	
+
 	public static void closeSocket(Socket socket) {
 		try {
 			if (socket == null) {
 				return;
 			}
-			
-			try {socket.shutdownInput();} catch (Exception e) {}
-			try {socket.shutdownOutput();} catch (Exception e) {}
+
+			try {
+				socket.shutdownInput();
+			} catch (Exception e) {
+			}
+			try {
+				socket.shutdownOutput();
+			} catch (Exception e) {
+			}
 
 			try {
 				InputStream is = socket.getInputStream();
 				if (is != null) {
 					is.close();
 				}
-			} catch (Exception e) {			
+			} catch (Exception e) {
 			}
 
 			try {
@@ -31,10 +37,13 @@ public class NetworkUtil {
 				if (os != null) {
 					os.close();
 				}
-			} catch (Exception e) {			
+			} catch (Exception e) {
 			}
-			
-			try {socket.close();} catch (Exception e) {}
+
+			try {
+				socket.close();
+			} catch (Exception e) {
+			}
 		} catch (Exception e) {
 		}
 	}
