@@ -22,7 +22,7 @@ public class MessageDigest {
 			Logger.print(Level.E, e);
 		}
 	}
-	
+
 	public void reset() {
 		mMD.reset();
 	}
@@ -56,7 +56,7 @@ public class MessageDigest {
 	public void update(InputStream is) {
 		byte[] bs = new byte[1024 * 1024];
 		int len;
-		
+
 		try {
 			while ((len = is.read(bs)) > 0) {
 				mMD.update(bs, 0, len);
@@ -65,11 +65,11 @@ public class MessageDigest {
 			Logger.print(Level.E, e);
 		}
 	}
-	
+
 	public byte[] digestBytes() {
 		return mMD.digest();
 	}
-	
+
 	public String digestHex() {
 		byte[] bs = mMD.digest();
 		return Convert.toHexString(bs);
