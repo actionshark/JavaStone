@@ -22,7 +22,7 @@ public class Convert {
 	}
 	
 	public static long bs2n(byte[] bytes, int offset, int length) {
-		int n = 0;
+		long n = 0;
 		
 		for (int i = 0; i < length; i++) {
 			n = n << 8 | (bytes[offset + i] & 0xff);
