@@ -43,35 +43,38 @@ public class StreamReader {
 		List<byte[]> list = new ArrayList<byte[]>();
 		int offset = 0;
 
-		try {
-			byte[] bs = new byte[BUF_SIZE];
+		byte[] bytes = new byte[BUF_SIZE];
 
-			while (true) {
-				int m = Math.min(bs.length - offset, max);
-				int len = mInputStream.read(bs, offset, m);
-				if (len <= 0) {
-					break;
-				}
-
-				offset += len;
-				if (offset >= bs.length) {
-					list.add(bs);
-					bs = new byte[BUF_SIZE];
-					offset = 0;
-				}
-
-				max -= len;
-				if (max <= 0) {
-					break;
-				}
+		while (true) {
+			int m = Math.min(bytes.length - offset, max);
+			
+			int len = 0;
+			try {
+				len = mInputStream.read(bytes, offset, m);
+			} catch (Exception e) {
+				Logger.print(Level.E, e);
+			}
+			
+			if (len <= 0) {
+				break;
 			}
 
-			list.add(bs);
-		} catch (Exception e) {
-			Logger.print(Level.E, e);
+			offset += len;
+			if (offset >= bytes.length) {
+				list.add(bytes);
+				bytes = new byte[BUF_SIZE];
+				offset = 0;
+			}
+
+			max -= len;
+			if (max <= 0) {
+				break;
+			}
 		}
 
-		byte[] bytes = new byte[BUF_SIZE * (list.size() - 1) + offset];
+		list.add(bytes);
+
+		bytes = new byte[BUF_SIZE * (list.size() - 1) + offset];
 		int os = 0;
 
 		for (int i = 0; i < list.size() - 1; i++) {
@@ -92,27 +95,27 @@ public class StreamReader {
 
 		return bytes;
 	}
-	
+
 	public byte[] readFull(int size) {
 		byte[] result = new byte[size];
 		readFull(result);
 		return result;
 	}
-	
+
 	public void readFull(byte[] bs) {
 		try {
 			int offset = 0;
-			
+
 			while (offset < bs.length) {
 				int len = mInputStream.read(bs, offset, bs.length - offset);
-				
+
 				if (len <= 0) {
 					ThreadUtil.sleep(100);
 				}
-				
+
 				offset += len;
 			}
-		} catch(Exception e) {
+		} catch (Exception e) {
 			Logger.print(Level.E, e);
 		}
 	}
