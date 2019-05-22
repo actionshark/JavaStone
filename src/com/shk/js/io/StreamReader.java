@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.shk.js.log.Level;
 import com.shk.js.log.Logger;
+import com.shk.js.thread.ThreadUtil;
 
 public class StreamReader {
 	private static final int BUF_SIZE = 1024 * 1024;
@@ -90,6 +91,30 @@ public class StreamReader {
 		}
 
 		return bytes;
+	}
+	
+	public byte[] readFull(int size) {
+		byte[] result = new byte[size];
+		readFull(result);
+		return result;
+	}
+	
+	public void readFull(byte[] bs) {
+		try {
+			int offset = 0;
+			
+			while (offset < bs.length) {
+				int len = mInputStream.read(bs, offset, bs.length - offset);
+				
+				if (len <= 0) {
+					ThreadUtil.sleep(100);
+				}
+				
+				offset += len;
+			}
+		} catch(Exception e) {
+			Logger.print(Level.E, e);
+		}
 	}
 
 	public String readString() {
