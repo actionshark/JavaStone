@@ -20,4 +20,35 @@ public class Convert {
 
 		return sb.toString();
 	}
+	
+	public static long bs2n(byte[] bytes, int offset, int length) {
+		int n = 0;
+		
+		for (int i = 0; i < length; i++) {
+			n = n << 8 | (bytes[offset + i] & 0xff);
+		}
+		
+		return n;
+	}
+	
+	public static long bs2n(byte[] bytes) {
+		return bs2n(bytes, 0, bytes.length);
+	}
+	
+	public static void n2bs(long n, byte[] bytes, int offset, int length) {
+		for (int i = length - 1; i >= 0; i--) {
+			bytes[offset + i] = (byte) (n & 0xff);
+			n >>>= 8;
+		}
+	}
+	
+	public static void n2bs(long n, byte[] bytes) {
+		n2bs(n, bytes, 0, bytes.length);
+	}
+	
+	public static byte[] n2bs(long n, int length) {
+		byte[] bs = new byte[length];
+		n2bs(n, bs);
+		return bs;
+	}
 }
