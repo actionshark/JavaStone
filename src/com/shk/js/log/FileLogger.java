@@ -78,6 +78,7 @@ public class FileLogger extends Logger {
 		String string = String.format("%s %s", level.getText(), content);
 		byte[] buf = string.getBytes();
 		os.write(buf);
+		os.flush();
 		os.close();
 	}
 }
