@@ -95,7 +95,7 @@ public abstract class Logger {
 					.append(element.getMethodName()).append("()\n");
 		}
 
-		sb.append(content).append('\n');
+		sb.append(content).append("\n\n");
 
 		try {
 			onPrint(level, sb.toString());
