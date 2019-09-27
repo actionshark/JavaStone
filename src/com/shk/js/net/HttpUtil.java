@@ -54,7 +54,7 @@ public class HttpUtil {
 			}
 
 			conn.setDoInput(true);
-			if ("POST".equals(conn.getRequestMethod())) {
+			if ("POST".equals(conn.getRequestMethod()) || params.data != null) {
 				conn.setDoOutput(true);
 			}
 
