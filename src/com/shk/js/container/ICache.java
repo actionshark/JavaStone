@@ -27,27 +27,27 @@ public interface ICache<K, V> {
 		}
 	}
 
-	public int count();
+	int count();
 
-	public void clear();
+	void clear();
 
-	public void setMaxSize(int max);
+	void setMaxSize(int max);
 
-	public int getMaxSize();
+	int getMaxSize();
 
-	public int getCurrentSize();
+	int getCurrentSize();
 
-	public boolean contains(K key);
+	boolean contains(K key);
 
-	public void put(K key, V value, int size);
+	void put(K key, V value, int size);
 
-	public V get(K key);
+	V get(K key);
 
-	public boolean remove(K key);
+	boolean remove(K key);
 
-	public Set<Entry<K, V>> entrys();
+	Set<Entry<K, V>> entrys();
 
-	public Set<K> keys();
+	Set<K> keys();
 
-	public Set<V> values();
+	Set<V> values();
 }
