@@ -21,7 +21,7 @@ public class Convert {
 		return sb.toString();
 	}
 	
-	public static long bs2n(byte[] bytes, int offset, int length) {
+	public static long bytes2Number(byte[] bytes, int offset, int length) {
 		long n = 0;
 		
 		for (int i = 0; i < length; i++) {
@@ -31,24 +31,24 @@ public class Convert {
 		return n;
 	}
 	
-	public static long bs2n(byte[] bytes) {
-		return bs2n(bytes, 0, bytes.length);
+	public static long bytes2Number(byte[] bytes) {
+		return bytes2Number(bytes, 0, bytes.length);
 	}
 	
-	public static void n2bs(long n, byte[] bytes, int offset, int length) {
+	public static void number2bytes(long n, byte[] bytes, int offset, int length) {
 		for (int i = length - 1; i >= 0; i--) {
 			bytes[offset + i] = (byte) (n & 0xff);
 			n >>>= 8;
 		}
 	}
 	
-	public static void n2bs(long n, byte[] bytes) {
-		n2bs(n, bytes, 0, bytes.length);
+	public static void number2bytes(long n, byte[] bytes) {
+		number2bytes(n, bytes, 0, bytes.length);
 	}
 	
-	public static byte[] n2bs(long n, int length) {
+	public static byte[] number2bytes(long n, int length) {
 		byte[] bs = new byte[length];
-		n2bs(n, bs);
+		number2bytes(n, bs);
 		return bs;
 	}
 }
