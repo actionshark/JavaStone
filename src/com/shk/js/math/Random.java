@@ -10,7 +10,7 @@ public class Random extends java.util.Random {
 	}
 
 	public int nextInt(int min, int max) {
-		long dis = max - min;
+		long dis = max - min + 1;
 		long add = nextLong() % dis;
 		if (add < 0) {
 			add += dis;
@@ -22,7 +22,7 @@ public class Random extends java.util.Random {
 	}
 
 	public long nextLong(long min, long max) {
-		long dis = max - min;
+		long dis = max - min + 1;
 		long add = nextLong() % dis;
 		if (add < 0) {
 			add += dis;
